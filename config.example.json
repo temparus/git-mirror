@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Gitlab->GitHub"
+    "sync": "public",
+    "create": true,
+    "source": {
+      "type": "gitlab",
+      "domain": "gitlab.ethz.ch",
+	  "organization": "<gitlab-group>",
+      "user": "<gitlab-user>",
+      "password": "<password>",
+	},
+    "destination": {
+      "type": "github",
+	  "organization": "<github-organization>",
+      "user": "<github-user>",
+      "password": "password>"
+    }
+  },
+  {
+    "name": "GitHub->GitLab"
+    "sync": "public",
+    "create": true,
+    "source": {
+      "type": "github",
+      "user": "<github-user",
+      "password": "<password>"
+	},
+    "destination": {
+      "type": "gitlab",
+      "domain": "gitlab.ethz.ch",
+      "user": "<gitlab-user>",
+      "password": "<password>"
+    }
+  }
+]
