@@ -5,14 +5,14 @@
     "create": true,
     "source": {
       "type": "gitlab",
-      "domain": "gitlab.ethz.ch",
-	  "organization": "<gitlab-group>",
+      "domain": "gitlab.domain.com",
+      "organization": "<gitlab-group>",
       "user": "<gitlab-user>",
       "password": "<password>",
 	},
     "destination": {
       "type": "github",
-	  "organization": "<github-organization>",
+      "organization": "<github-organization>",
       "user": "<github-user>",
       "password": "password>"
     }
@@ -28,7 +28,7 @@
 	},
     "destination": {
       "type": "gitlab",
-      "domain": "gitlab.ethz.ch",
+      "domain": "gitlab.domain.com",
       "user": "<gitlab-user>",
       "password": "<password>"
     }
