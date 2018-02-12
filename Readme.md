@@ -18,27 +18,34 @@ The default configuration file is `./config.json`. It needs to have the followin
   "name": "Gitlab->GitHub"
   "sync": "public",
   "create": true,
+  "delete": true,
   "source": {
     "type": "gitlab",
     "domain": "gitlab.domain.com",
-	"organization": "<gitlab-group",
+	  "organization": "<gitlab-group",
     "user": "<gitlab-user>",
     "password": "<password>"
   },
   "destination": {
     "type": "github",
-	"organization": "<github-organization>",
+	  "organization": "<github-organization>",
     "user": "<github-user>",
     "password": "<password>"
-  }
+  },
+  "jobs": [
+    "<repository name of poject 1>",
+    "<repository name of poject 2>",
+    "<repository name of poject 3>"
+  ]
 }
 ```
 
 #### Explanation of keys:
-* `sync`: specify the repository type to to be synchonized. Possible values: `public`, `internal`, `private`, `all`
+* `sync`: specify the repository type to to be synchonized. Possible values: `all`, `public`, `internal`, `private`, `jobs` (default: `jobs`)
 * `create`: specify if non-existing repositories should be created at the destination
 * `domain`: only needed for type `gitlab`
 * `organization`: if this key is missing, the repositories of the specified user are taken.
+* `jobs`: an array of repository names to be synced (regardless of the `sync` setting)
 
 ## Usage
 ```

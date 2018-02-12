@@ -1,36 +1,64 @@
-[
-  {
-    "name": "Gitlab->GitHub"
-    "sync": "public",
-    "create": true,
-    "source": {
+{
+  "hoster": [    
+    {
+      "name": "gitlab_organization",
       "type": "gitlab",
+      "api-version": 4,
       "domain": "gitlab.domain.com",
       "organization": "<gitlab-group>",
       "user": "<gitlab-user>",
-      "password": "<password>",
-	},
-    "destination": {
+      "password": "<password>"
+    },
+    {
+      "name": "gitlab_personal",
+      "type": "gitlab",
+      "api-version": 4,
+      "domain": "gitlab.domain2.com",
+      "user": "<gitlab-user>",
+      "password": "<password>"
+    },
+    {
+      "name": "github_organization",
       "type": "github",
+      "api-version": 3,
       "organization": "<github-organization>",
       "user": "<github-user>",
       "password": "password>"
-    }
-  },
-  {
-    "name": "GitHub->GitLab"
-    "sync": "public",
-    "create": true,
-    "source": {
+    },
+    {
+      "name": "github_personal",
       "type": "github",
+      "api-version": 3,
       "user": "<github-user",
       "password": "<password>"
-	},
-    "destination": {
-      "type": "gitlab",
-      "domain": "gitlab.domain.com",
-      "user": "<gitlab-user>",
-      "password": "<password>"
     }
-  }
-]
+  ],
+  "tasks": [
+    {
+      "name": "gitlab_gitHub",
+      "sync": "public",
+      "create": true,
+      "delete": true,
+      "source": "gitlab_organization",
+      "destinations": [
+        "github_organization"
+      ]
+    },
+    {
+      "name": "gitHub_gitLab",
+      "sync": "manual",
+      "create": true,
+      "delete": true,
+      "source": "github_personal",
+      "destinations": [
+        "gitlab_personal",
+        "github_organization"
+      ],
+      "repositories": [
+        "<repository name of poject 1>",
+        "<repository name of poject 2>",
+        "<repository name of poject 3>"
+      ]
+    }
+  ]
+}
