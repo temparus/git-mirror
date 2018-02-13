@@ -1,0 +1,2 @@
+validators==0.12.1
+requests>=2.18.4
