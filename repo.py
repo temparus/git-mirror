@@ -10,11 +10,10 @@ from remote_repo import RemoteRepository
 
 class Repository():
 
-  def __init__(self, name, source=None, destinations=dict()):
+  def __init__(self, source, destinations=dict()):
     '''
     Initialize a git repository instance
 
-    :param str name:                Repository name
     :param RemoteRepository source: Source remote repository
     :param dict destinations:       Destination remote repositories
     '''
@@ -38,7 +37,8 @@ class Repository():
         return
 
     self.local_path = self._generateLocalPath()
-    proc = subprocess.Popen(['git', 'clone', '--mirror', self.source.getGitUrl(), self.local_path])
+    print(self.local_path)
+    proc = subprocess.Popen(['git', 'clone', '--mirror', self.source.getGitUrl(), self.local_path + '/.git'], stdout = subprocess.DEVNULL)
 
     try:
       if proc.wait() != 0:
@@ -58,7 +58,7 @@ class Repository():
       self.clone()
       return
 
-    proc = subprocess.Popen(['git', 'remote', 'update'], cwd = self.local_path)
+    proc = subprocess.Popen(['git', 'remote', 'update', '--prune'], cwd = self.local_path, stdout = subprocess.DEVNULL)
 
     try:
       if proc.wait() != 0:
@@ -86,14 +86,15 @@ class Repository():
     if remote_name != None:
       if remote_name not in self.destinations:
         raise RuntimeError('Remote destination \'' + remote_name + '\' not found')
-      procList.append(subprocess.Popen(['git', 'push', '--mirror', self.destinations[remote_name].getGitUrl(), self.local_path]))
+      procList.append(subprocess.Popen(['git', 'push', '--mirror', self.destinations[remote_name].getGitUrl()], cwd = self.local_path, stdout = subprocess.DEVNULL))
     else:
-      for remote in self.destinations:
-        procList.append(subprocess.Popen(['git', 'push', '--mirror', remote.getGitUrl(), self.local_path]))
+      for _key, remote in self.destinations.items():
+        procList.append(subprocess.Popen(['git', 'push', '--mirror', remote.getGitUrl()], cwd = self.local_path))
     try:
       for proc in procList:
-        if proc.wait() != 0:
-          raise ConnectionError('Cloning repository ' + self.source.git_url + ' failed')
+        value = proc.wait()
+        if value != 0:
+          raise ConnectionError('(Error ' + str(value) + ') Pushing repository ' + self.source.git_url + ' failed')
     except InterruptedError:
       for proc in procList:
         proc.kill()
@@ -107,7 +108,7 @@ class Repository():
     Check if repository already exists in cache
     '''
     path = self._generateLocalPath()
-    if os.path.isdir(path) and os.path.isdir(self.local_path + '/.git'):
+    if os.path.isdir(path) and os.path.isdir(path + '/.git'):
       self.local_path = path
 
 
@@ -119,4 +120,4 @@ class Repository():
     :rtype:  str
     '''
     param = {'source': self.source.source_name, 'name': self.source.name}
-    return '/tmp/git-sync/%(source)s/%(name)s' % param
+    return '/tmp/git-mirror/%(source)s/%(name)s' % param

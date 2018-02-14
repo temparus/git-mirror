@@ -1,0 +1,155 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2018 Sandro Lutz <code@temparus.ch>
+#
+# This software is licensed under GPLv3, see LICENSE for details. 
+
+import sys
+from hoster import BaseHoster
+from repo import Repository, RemoteRepository
+
+def getTaskInstance(config, hoster):
+    '''
+    Get a Task instance
+
+    :param dict config: task configuration
+    :param dict hoster: hoster collection
+
+    :return: Task object
+    :rtype:  Task
+
+    :raises ValueError: if the given configuration is invalid
+    '''
+    if any (key not in config for key in ['source', 'destinations']):
+      raise ValueError('Missing some required properties (source, destinations)')
+
+    if config['source'] not in hoster:
+      raise ValueError('Source hoster\'' + config['source'] + '\' not found')
+
+    if len(config['destinations']) == 0:
+      raise ValueError('Not destinations specified')
+
+    source = hoster[config['source']]
+    destinations = dict()
+    for destination in config['destinations']:
+      if destination not in hoster:
+        raise ValueError('Destination hoster \'' + destination + '\' not found')
+      destinations[destination] = hoster[destination]
+
+    if 'sync' in config:
+      if config['sync'] not in ['all', 'public', 'internal', 'private', 'manual']:
+        raise ValueError('sync mode \'' + config['sync'] + '\' is not supported')
+      sync = config['sync']
+    else:
+      sync = 'manual'
+
+    task = Task(source, destinations, sync)
+
+    if 'create' in config and config['create'] == False:
+      task.create = False
+    if 'delte' in config and config['delete'] == True:
+      task.delete = True
+    if 'name' in config:
+      task.name = config['name']
+
+    if 'repositories' in config and len(config['repositories']) > 0:
+      task.repositories = config['repositories']
+
+    return task
+
+
+class Task():
+
+  def __init__(self, source, destinations, sync):
+    '''
+    Initialize a Task instance
+
+    :param BaseHoster source: source hoster
+    :param dict destinations: dictionary with BaseHoster as destinations
+    :param str sync:          sync mode (all, public, internal, private, manual)
+    '''
+    self.source = source
+    self.destinations = destinations
+    self.sync = sync
+
+    # Default values
+    self.create = True
+    self.delete = False
+    self.name = None
+    self.repositories = None
+
+
+  def run(self, verbose):
+    '''
+    Run mirror task now. This is a blocking method!
+    '''
+    repositories = list()
+    if self.sync == 'manual':
+      if self.repositories == None:
+        return
+      for repo_name in self.repositories:
+        try:
+          source_remote = self.source.getRepository(repo_name)
+          if not source_remote.description.startswith('MIRROR:'):
+            repository = self._createRepository(source_remote, self.destinations)
+            if repository != None:
+              repositories.append(repository)
+        except:
+          if verbose:
+            print('Repository \'' + repo_name + '\' not found on \'' + self.source.name + '\'')
+          pass # repository not found on source hoster -> skip
+    else:
+      try:
+        source_remotes = self.source.listRepositories(self.sync)
+        for source_remote in source_remotes:
+          print(source_remote)
+          if not source_remote.description.startswith('MIRROR:'):
+            repository = self._createRepository(source_remote, self.destinations)
+            if repository != None:
+              repositories.append(repository)
+      except:
+        if verbose:
+          print('CommunicationError: Skip hoster \'' + self.source.name + '\'')
+        return # an error occured while communicating with this source hoster -> abort
+
+    for repository in repositories:
+      try:
+        repository.clone()
+        repository.push()
+      except:
+        if verbose:
+          print('SyncError: Skip repository \'' + repository.source.name + '\'')
+        pass # ignore this repository when an error occures
+
+    if self.delete:
+      pass # TODO: delete additional repositories on destination host
+
+
+  def _createRepository(self, source_remote, destinations):
+    print('task._createRepository() called')
+    param = {'description': source_remote.description, 'web_url': source_remote.web_url}
+    description = 'MIRROR: %(description)s // Contribute at %(web_url)s' % param 
+
+    destination_remotes = dict()
+    for key in destinations:
+      try:
+        remote_repo = destinations[key].getRepository(source_remote.name)
+        remote_repo.description = description
+        remote_repo.website = source_remote.website
+        destinations[key].updateRepository(remote_repo)
+        destination_remotes[key] = remote_repo
+      except ValueError:
+        # Repository does not exist -> create it
+        if self.create:
+          try:
+            destination_remotes[destinations[key].name] = destinations[key].createRepository(
+              source_remote.name, source_remote.visibility, description, source_remote.web_url
+            )
+          except:
+            pass # Skip this destination when communication errors occur
+      except:
+        pass # Skip this destination when communication errors occur
+
+    if len(destination_remotes) == 0:
+      return None
+    return Repository(source_remote, destination_remotes)
