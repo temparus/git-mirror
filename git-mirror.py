@@ -8,7 +8,9 @@
 import argparse
 import ipaddress
 import json
-from utils import *
+
+from hoster import getHosterInstance
+from task import getTaskInstance
 
 parser = argparse.ArgumentParser(prog='gitlab-github-sync',
           description='Synchronizes repositories between GitLab and GitHub w/o direct access to the GitLab Server.')
@@ -22,4 +24,28 @@ args = parser.parse_args()
 # Read configuration file
 data = json.load(args.config)
 
-# Perform sync here...
+if 'hoster' not in data:
+  raise ValueError('Configuration file does not contain any hoster')
+
+hoster = dict()
+for config in data['hoster']:
+  if 'name' not in config:
+    raise ValueError('Not all hoster in the configuration file have a name assigned')
+  hoster[config['name']] = getHosterInstance(config)
+  if args.verbose:
+    print('Hoster ' + config['name'] + ' loaded')
+
+tasks = list()
+for config in data['tasks']:
+  tasks.append(getTaskInstance(config, hoster))
+  if args.verbose:
+    print('Task ' + config['name'] + ' prepared')
+
+
+for task in tasks:
+  # TODO: Run tasks asynchonously
+  if args.verbose:
+    print('Run task ' + task.name + '...')
+  task.run(args.verbose)
+  if args.verbose:
+    print('-----------')
