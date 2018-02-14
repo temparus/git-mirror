@@ -22,7 +22,10 @@ parser.add_argument('--version', action='version', version='%(prog)s 0.1')
 args = parser.parse_args()
 
 # Read configuration file
-data = json.load(args.config)
+if (type(args.config) is list):
+  data = json.load(args.config[-1])
+else:
+  data = json.load(args.config)
 
 if 'hoster' not in data:
   raise ValueError('Configuration file does not contain any hoster')
