@@ -1,51 +1,38 @@
-GitLab-GitHub-sync
-==================
+git-mirror
+==========
 
-This tool synchronizes repositories between GitLab and GitHub. No direct access to the GitLab Server is needed.
+This tool mirrors repositories from GitLab to GitHub and vice versa. No direct access to the GitLab Server is needed.
 
 ## Requirements
 * git
+* python 3.x
+* pip requirements in `requirements.txt`
 
 ## Setup
-Just copy the source files to a directory on your machine.
+Just copy the source files to a directory on your machine and install all python requirements:
+```
+pip install -r requirements.txt
+```
 
 ## Configuration File
 
 The default configuration file is `./config.json`. It needs to have the following structure:
 
-```
-{
-  "name": "Gitlab->GitHub"
-  "sync": "public",
-  "create": true,
-  "delete": true,
-  "source": {
-    "type": "gitlab",
-    "domain": "gitlab.domain.com",
-	  "organization": "<gitlab-group",
-    "user": "<gitlab-user>",
-    "password": "<password>"
-  },
-  "destination": {
-    "type": "github",
-	  "organization": "<github-organization>",
-    "user": "<github-user>",
-    "password": "<password>"
-  },
-  "jobs": [
-    "<repository name of poject 1>",
-    "<repository name of poject 2>",
-    "<repository name of poject 3>"
-  ]
-}
-```
+An example configuration file can be found in the file `config.example.json`.
 
-#### Explanation of keys:
-* `sync`: specify the repository type to to be synchonized. Possible values: `all`, `public`, `internal`, `private`, `jobs` (default: `jobs`)
-* `create`: specify if non-existing repositories should be created at the destination
-* `domain`: only needed for type `gitlab`
-* `organization`: if this key is missing, the repositories of the specified user are taken.
-* `jobs`: an array of repository names to be synced (regardless of the `sync` setting)
+#### Explanation of `hoster` keys:
+* `domain`: Only needed for type `gitlab`
+* `organization`: User namespace is used when this key is missing.
+
+#### Explanation of `task` keys:
+* `sync`: Specify the repository type to to be synchonized.
+  Possible values: `all`, `public`, `internal`, `private`, `manual` (default: `manual`)
+* `create`: Specify if non-existing repositories should be created at the destination 
+  (default: `true`)
+* `delete`: Specify if mirrored repositories missing on the source should be deleted 
+  at the destination (default: `false`)
+* `repositories`: An array of repository names to be synced
+  (regardless of the `sync` setting)
 
 ## Usage
 ```
