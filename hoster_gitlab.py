@@ -155,7 +155,7 @@ class GitLabHoster(BaseHoster):
 
     if response.status_code in [401, 403]:
       raise PermissionError('Access denied by the server')
-    elif response.status_code not in [200, 201, 202]:
+    elif response.status_code not in [200, 201, 202, 203, 204]:
       raise ConnectionError('Received HTTP error ' + str(response.status_code))
 
 

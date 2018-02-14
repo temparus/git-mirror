@@ -47,7 +47,7 @@ def getTaskInstance(config, hoster):
 
     if 'create' in config and config['create'] == False:
       task.create = False
-    if 'delte' in config and config['delete'] == True:
+    if 'delete' in config and config['delete'] == True:
       task.delete = True
     if 'name' in config:
       task.name = config['name']
@@ -124,14 +124,14 @@ class Task():
       source_repositories = self.source.listRepositories('all')
       source_names = list()
       for source_repo in source_repositories:
-        if not source_repo.name.startswith('MIRROR:'):
+        if not source_repo.description.startswith('MIRROR:'):
           source_names.append(source_repo.name)
 
       # Delete non-existent repositories on mirror destinations
       for key in self.destinations:
         destination_repositories = self.destinations[key].listRepositories('all')
         for repo in destination_repositories:
-          if not repo in source_names:
+          if repo.description.startswith('MIRROR:') and not repo in source_names:
             self.destinations[key].deleteRepository(repo)
             if verbose:
               print('Repository \'' + repo.name + '\' deleted from \'' + self.destinations[key].name + '\'')
