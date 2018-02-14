@@ -1,18 +1,49 @@
-git-mirror
-==========
+# git-mirror
 
 This tool mirrors repositories from GitLab to GitHub and vice versa. No direct access to the GitLab Server is needed.
 
 ## Requirements
+
 * git
 * python 3.x
 * pip requirements in `requirements.txt`
 
 ## Setup
-Just copy the source files to a directory on your machine and install all python requirements:
-```
-pip install -r requirements.txt
-```
+
+1. Get source files
+    * **Docker** Use the official image (https://hub.docker.com/r/temparus/git-mirror/)
+    * **Standalone**
+      Just clone this repository to a directory on your machine and install the dependencies:
+      ```bash
+      pip install -r requirements.txt
+      ```
+2. Run git-mirror once
+    * **Docker**
+      ```bash
+      docker run --volume /path/to/config.json:/git-mirror/config.json \
+      temparus/git-mirror:latest --verbose
+      ```
+    * **Standalone**
+      ```bash
+      python3 /path/to/git-mirror/git-mirror.py --config /path/to/config.json
+      ```
+3. Run git-mirror with `Cron`
+    * **Docker-Compose**
+      Use normal cron notation for the environment variable `GIT_MIRROR_DAEMON`.
+      ```yaml
+      version: "3"
+      services:
+        git-mirror:
+          image: temparus/git-mirror:latest
+          environment:
+            - GIT_MIRROR_DAEMON=0 * * * *
+          volumes:
+            - /path/to/config.json:/git-mirror/config.json
+      ```
+    * **Standalone** execute `crontab -e` and add the following line there
+      ```cron
+      0 * * * * python3 /path/to/git-mirror/git-mirror.py --config /path/to/config.json
+      ```
 
 ## Configuration File
 
@@ -20,11 +51,13 @@ The default configuration file is `./config.json`. It needs to have the followin
 
 An example configuration file can be found in the file `config.example.json`.
 
-#### Explanation of `hoster` keys:
+### Explanation of `hoster` keys
+
 * `domain`: Only needed for type `gitlab`
 * `organization`: User namespace is used when this key is missing.
 
-#### Explanation of `task` keys:
+### Explanation of `task` keys
+
 * `sync`: Specify the repository type to to be synchonized.
   Possible values: `all`, `public`, `internal`, `private`, `manual` (default: `manual`)
 * `create`: Specify if non-existing repositories should be created at the destination 
@@ -35,8 +68,9 @@ An example configuration file can be found in the file `config.example.json`.
   (regardless of the `sync` setting)
 
 ## Usage
-```
-usage: gitlab-github-sync.py [-h] [--verbose] [--config config.json] [--version]
+
+```bash
+usage: git-mirror.py [-h] [--verbose] [--config config.json] [--version]
 
 Synchronizes repositories between GitLab and GitHub.
 
@@ -50,6 +84,7 @@ optional arguments:
 ```
 
 ## License
+
 Copyright (C) 2018 Sandro Lutz \<<code@temparus.ch>\>
 
 This program is free software: you can redistribute it and/or modify
