@@ -23,7 +23,7 @@
       "api-version": 3,
       "organization": "<github-organization>",
       "user": "<github-user>",
-      "password": "password>"
+      "password": "<password>"
     },
     {
       "name": "github_personal",
