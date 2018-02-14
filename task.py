@@ -122,7 +122,20 @@ class Task():
         pass # ignore this repository when an error occures
 
     if self.delete:
-      pass # TODO: delete additional repositories on destination host
+      source_repositories = self.source.listRepositories('all')
+      source_names = list()
+      for source_repo in source_repositories:
+        if not source_repo.name.startswith('MIRROR:'):
+          source_names.append(source_repo.name)
+
+      # Delete non-existent repositories on mirror destinations
+      for key in self.destinations:
+        destination_repositories = self.destinations[key].listRepositories('all')
+        for repo in destination_repositories:
+          if not repo in source_names:
+            self.destinations[key].deleteRepository(repo)
+            if verbose:
+              print('Repository \'' + repo.name + '\' deleted from \'' + self.destinations[key].name + '\'')
 
 
   def _createRepository(self, source_remote, destinations):
