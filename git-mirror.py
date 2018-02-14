@@ -12,7 +12,7 @@ import json
 from hoster import getHosterInstance
 from task import getTaskInstance
 
-parser = argparse.ArgumentParser(prog='git-mirror',
+parser = argparse.ArgumentParser(prog='git-mirror.py',
           description='Mirrors repositories from GitLab to GitHub and vice versa w/o direct access to the GitLab Server.')
 parser.add_argument('-v', '--verbose', action="store_true",
                    help='prints more output to the console')
