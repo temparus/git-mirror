@@ -12,8 +12,8 @@ import json
 from hoster import getHosterInstance
 from task import getTaskInstance
 
-parser = argparse.ArgumentParser(prog='gitlab-github-sync',
-          description='Synchronizes repositories between GitLab and GitHub w/o direct access to the GitLab Server.')
+parser = argparse.ArgumentParser(prog='git-mirror',
+          description='Mirrors repositories from GitLab to GitHub and vice versa w/o direct access to the GitLab Server.')
 parser.add_argument('-v', '--verbose', action="store_true",
                    help='prints more output to the console')
 parser.add_argument('-c', '--config', metavar='config.json', nargs=1, type=argparse.FileType('r'),
