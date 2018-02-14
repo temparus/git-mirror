@@ -102,7 +102,7 @@ class Task():
       try:
         source_remotes = self.source.listRepositories(self.sync)
         for source_remote in source_remotes:
-          if not source_remote.description.startswith('MIRROR:'):
+          if source_remote.description != None and not source_remote.description.startswith('MIRROR:'):
             repository = self._createRepository(source_remote, self.destinations)
             if repository != None:
               repositories.append(repository)
@@ -124,14 +124,14 @@ class Task():
       source_repositories = self.source.listRepositories('all')
       source_names = list()
       for source_repo in source_repositories:
-        if not source_repo.description.startswith('MIRROR:'):
+        if source_remote.description != None and not source_repo.description.startswith('MIRROR:'):
           source_names.append(source_repo.name)
 
       # Delete non-existent repositories on mirror destinations
       for key in self.destinations:
         destination_repositories = self.destinations[key].listRepositories('all')
         for repo in destination_repositories:
-          if repo.description.startswith('MIRROR:') and not repo in source_names:
+          if repo.description != None and repo.description.startswith('MIRROR:') and not repo in source_names:
             self.destinations[key].deleteRepository(repo)
             if verbose:
               print('Repository \'' + repo.name + '\' deleted from \'' + self.destinations[key].name + '\'')
