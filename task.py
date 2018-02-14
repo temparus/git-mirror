@@ -102,7 +102,6 @@ class Task():
       try:
         source_remotes = self.source.listRepositories(self.sync)
         for source_remote in source_remotes:
-          print(source_remote)
           if not source_remote.description.startswith('MIRROR:'):
             repository = self._createRepository(source_remote, self.destinations)
             if repository != None:
@@ -139,7 +138,6 @@ class Task():
 
 
   def _createRepository(self, source_remote, destinations):
-    print('task._createRepository() called')
     param = {'description': source_remote.description, 'web_url': source_remote.web_url}
     description = 'MIRROR: %(description)s // Contribute at %(web_url)s' % param 
 

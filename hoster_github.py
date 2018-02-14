@@ -56,7 +56,6 @@ class GitHubHoster(BaseHoster):
     if response.status_code in [200, 201, 202]:
       repoList = list()
       for repo in response.json():
-        print('Found GitHub repo \'' + repo['name'] + '\'')
         repoList.append(self._parseProjectResponse(repo))
       return repoList
     elif response.status_code in [401, 403]:

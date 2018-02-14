@@ -37,7 +37,6 @@ class Repository():
         return
 
     self.local_path = self._generateLocalPath()
-    print(self.local_path)
     proc = subprocess.Popen(['git', 'clone', '--mirror', self.source.getGitUrl(), self.local_path + '/.git'], stdout = subprocess.DEVNULL)
 
     try:

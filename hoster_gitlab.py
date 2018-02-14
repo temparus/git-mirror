@@ -51,14 +51,11 @@ class GitLabHoster(BaseHoster):
     else:
       raise ValueError('Operation not supported with API v' + str(self.api_version))
 
-    print('URL: ' + url)
-
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
       repoList = list()
       for repo in response.json():
-        print('Found GitLab repo \'' + repo['name'] + '\'')
         repoList.append(self._parseProjectResponse(repo))
       return repoList
     elif response.status_code in [401, 403]:
