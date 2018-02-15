@@ -18,7 +18,7 @@ parser.add_argument('-v', '--verbose', action="store_true",
                    help='prints more output to the console')
 parser.add_argument('-c', '--config', metavar='config.json', nargs=1, type=argparse.FileType('r'),
                    default='config.json', help='path to the configuration file')
-parser.add_argument('--version', action='version', version='%(prog)s 0.1')
+parser.add_argument('--version', action='version', version='%(prog)s 1.0.2')
 args = parser.parse_args()
 
 # Read configuration file
