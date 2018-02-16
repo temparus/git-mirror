@@ -117,6 +117,8 @@ class Task():
             repository = self._createRepository(source_remote, self.destinations)
             if repository != None:
               repositories.append(repository)
+              if verbose:
+                print('Found repository \'' + source_remote.name + '\'')
       except LookupError:
         if verbose:
           print('Repository \'' + repo_name + '\' not found on \'' + self.source.name + '\'')
@@ -130,6 +132,8 @@ class Task():
 
     for repository in repositories:
       try:
+        if verbose:
+          print('Mirror repository \'' + repository.source.name + '\'')
         repository.clone()
         repository.push()
       except:
