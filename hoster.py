@@ -27,12 +27,17 @@ def getHosterInstance(config):
     else:
       organization = None
 
+    if 'ignored-repositories' in config:
+      ignored_repositories = config['ignored-repositories']
+    else:
+      ignored_repositories = list()
+
     if config['type'] == 'github':
-      return GitHubHoster(config['name'], config['user'], config['password'], config['api-version'], organization)
+      return GitHubHoster(config['name'], config['user'], config['password'], config['api-version'], organization, ignored_repositories)
     elif config['type'] == 'gitlab':
       if 'domain' not in config:
         raise ValueError('Property \'domain\' required for hoster \'gitlab\'')
       return GitLabHoster(config['name'], config['user'], config['password'], config['api-version'], \
-        config['domain'], organization)
+        config['domain'], organization, ignored_repositories)
     else:
       raise ValueError('Unknown hoster \'' + config['type'] + '\'')

@@ -55,6 +55,9 @@ def getTaskInstance(config, hoster):
     if 'repositories' in config and len(config['repositories']) > 0:
       task.repositories = config['repositories']
 
+    if 'ignored-repositories' in config:
+      task.ignored_repositories = config['ignored-repositories']
+
     return task
 
 
@@ -77,6 +80,7 @@ class Task():
     self.delete = False
     self.name = None
     self.repositories = None
+    self.ignored_repositories = list()
 
 
   def run(self, verbose):
@@ -88,28 +92,41 @@ class Task():
       if self.repositories == None:
         return
       for repo_name in self.repositories:
-        try:
-          source_remote = self.source.getRepository(repo_name)
-          if not source_remote.description.startswith('MIRROR:'):
-            repository = self._createRepository(source_remote, self.destinations)
-            if repository != None:
-              repositories.append(repository)
-        except:
-          if verbose:
-            print('Repository \'' + repo_name + '\' not found on \'' + self.source.name + '\'')
-          pass # repository not found on source hoster -> skip
+        if repo_name not in self.ignored_repositories:
+          try:
+            source_remote = self.source.getRepository(repo_name)
+            if not source_remote.description.startswith('MIRROR:'):
+              repository = self._createRepository(source_remote, self.destinations)
+              if repository != None:
+                repositories.append(repository)
+          except LookupError:
+            if verbose:
+              print('Repository \'' + repo_name + '\' not found on \'' + self.source.name + '\'')
+          except PermissionError:
+            if verbose:
+              print('Permission denied on hoster \'' + self.source.name + '\'')
+          except Exception as e:
+            if verbose:
+              print('ERROR: ' + str(e))
     else:
       try:
         source_remotes = self.source.listRepositories(self.sync)
         for source_remote in source_remotes:
-          if source_remote.description != None and not source_remote.description.startswith('MIRROR:'):
+          if source_remote.name not in self.ignored_repositories and \
+            source_remote.description != None and not source_remote.description.startswith('MIRROR:'):
             repository = self._createRepository(source_remote, self.destinations)
             if repository != None:
               repositories.append(repository)
-      except:
+      except LookupError:
         if verbose:
-          print('CommunicationError: Skip hoster \'' + self.source.name + '\'')
-        return # an error occured while communicating with this source hoster -> abort
+          print('Repository \'' + repo_name + '\' not found on \'' + self.source.name + '\'')
+      except PermissionError:
+        if verbose:
+          print('Permission denied on hoster \'' + self.source.name + '\'')
+          return # Skip this hoster
+      except Exception as e:
+        if verbose:
+          print('ERROR: ' + str(e))
 
     for repository in repositories:
       try:
@@ -149,9 +166,9 @@ class Task():
         remote_repo.website = source_remote.website
         destinations[key].updateRepository(remote_repo)
         destination_remotes[key] = remote_repo
-      except ValueError:
+      except LookupError:
         # Repository does not exist -> create it
-        if self.create:
+        if self.create and source_remote.name not in destinations[key].ignored_repositories:
           try:
             destination_remotes[destinations[key].name] = destinations[key].createRepository(
               source_remote.name, source_remote.visibility, description, source_remote.web_url

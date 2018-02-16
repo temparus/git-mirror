@@ -13,19 +13,20 @@ from urllib.parse import urlencode
 
 class GitLabHoster(BaseHoster):
 
-  def __init__(self, name, user, access_token, api_version, domain, organization=None):
+  def __init__(self, name, user, access_token, api_version, domain, organization=None, ignored_repositories=None):
     '''
     Initialize a GitLab hoster instance
 
-    :param str name:         hoster name
-    :param str user:         username for the git service
-    :param str access_token: Personal access token for the user
-    :param int api_version:  API version
-    :param str domain:       GitLab domain
-    :param str organization: organization name used for syncing
-    :raises ValueError:      if the given parameters are invalid
+    :param str name:                 Hoster name
+    :param str user:                 Username for the git service
+    :param str access_token:         Personal access token for the user
+    :param int api_version:          API version
+    :param str domain:               GitLab domain
+    :param str organization:         Organization name used for syncing
+    :param str ignored_repositories: List of repository names to be ignored
+    :raises ValueError:              If the given parameters are invalid
     '''
-    super().__init__(name, user, access_token, organization)
+    super().__init__(name, user, access_token, organization, ignored_repositories)
 
     if api_version not in [4]:
       raise ValueError('GitLab API v' + str(api_version) + ' is not supported')
@@ -49,22 +50,26 @@ class GitLabHoster(BaseHoster):
       else:
         url = self._getAPIUrl('/users/%(user)s/projects', {'user': self.user})
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
       repoList = list()
       for repo in response.json():
-        repoList.append(self._parseProjectResponse(repo))
+        if (repo['name'] not in self.ignored_repositories):
+          repoList.append(self._parseProjectResponse(repo))
       return repoList
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def getRepository(self, name):
+    if name in self.ignored_repositories:
+      raise LookupError('Repository \'' + name + '\' not found')
+
     if self.api_version == 4:
       param = {'search': name}
 
@@ -73,7 +78,7 @@ class GitLabHoster(BaseHoster):
       else:
         url = self._getAPIUrl('/users/%(user)s/projects', {'user': self.user})
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
@@ -81,14 +86,17 @@ class GitLabHoster(BaseHoster):
       for repo in response.json():
         if repo['name'] == name:
           return self._parseProjectResponse(repo)
-      raise ValueError('Repository not found')
+      raise LookupError('Repository \'' + name + '\' not found')
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def createRepository(self, name, visibility, description=None, website=None):
+    if name in self.ignored_repositories:
+      raise PermissionError('Repository name \'' + name + '\' is in ignored-list of this hoster')
+
     if self.api_version == 4:
       if website != None:
         description += ' // ' + website
@@ -106,16 +114,16 @@ class GitLabHoster(BaseHoster):
         'snippets_enabled': False
       }
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.post(url, data = values, headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
       return self._parseProjectResponse(response.json())
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code) + response.text)
+      self._raiseConnectionError(response)
 
 
   def updateRepository(self, repo):
@@ -135,28 +143,28 @@ class GitLabHoster(BaseHoster):
         'snippets_enabled': False
       }
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.put(url, data = values, headers = self._getAuthenticationHeader())
 
     if response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     elif response.status_code not in [200, 201, 202]:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code) + response.text)
+      self._raiseConnectionError(response)
 
 
   def deleteRepository(self, repo):
     if self.api_version == 4:
       url = self._getAPIUrl('/projects/%(id)s', {'id': repo.id})
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.delete(url, headers = self._getAuthenticationHeader())
 
     if response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     elif response.status_code not in [200, 201, 202, 203, 204]:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def _checkVisibility(self, visibility):
@@ -182,7 +190,7 @@ class GitLabHoster(BaseHoster):
 
       url = self._getAPIUrl('/namespaces')
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
@@ -190,11 +198,11 @@ class GitLabHoster(BaseHoster):
       for repo in response.json():
         if repo['name'] == param['search'] or repo['path'] == param['search'] or repo['full_path'] == param['search']:
           return repo['id']
-      raise ValueError('Namespace not found')
+      raise LookupError('Namespace not found')
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def _parseProjectResponse(self, response):

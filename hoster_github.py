@@ -14,18 +14,19 @@ from urllib.parse import urlencode
 
 class GitHubHoster(BaseHoster):
 
-  def __init__(self, name, user, password, api_version, organization=None):
+  def __init__(self, name, user, password, api_version, organization=None, ignored_repositories=list()):
     '''
     Initialize a GitHubHoster instance
 
-    :param str name:         hoster name
-    :param str user:         username for the git service
-    :param str password:     password for the git service (in plain text)
-    :param int api_version:  API version
-    :param str organization: organization name used for syncing
-    :raises ValueError:      if the given parameters are invalid
+    :param str name:                 Hoster name
+    :param str user:                 Username for the git service
+    :param str password:             Password for the git service (in plain text)
+    :param int api_version:          API version
+    :param str organization:         Organization name used for syncing
+    :param str ignored_repositories: List of repository names to be ignored
+    :raises ValueError:              If the given parameters are invalid
     '''
-    super().__init__(name, user, password, organization)
+    super().__init__(name, user, password, organization, ignored_repositories)
 
     if api_version not in [3]:
       raise ValueError('GitHub API v' + str(api_version) + ' is not supported')
@@ -49,22 +50,26 @@ class GitHubHoster(BaseHoster):
         param['affiliation'] = 'owner'
         url = self._getAPIUrl('/user/repos', {'user': self.user})
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
       repoList = list()
       for repo in response.json():
-        repoList.append(self._parseProjectResponse(repo))
+        if (repo['name'] not in self.ignored_repositories):
+          repoList.append(self._parseProjectResponse(repo))
       return repoList
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def getRepository(self, name):
+    if name in self.ignored_repositories:
+      raise LookupError('Repository \'' + name + '\' not found')
+
     if self.api_version == 3:
       if self.organization != None:
         param = {'name': name, 'org': self.organization}
@@ -73,7 +78,7 @@ class GitHubHoster(BaseHoster):
         param = {'name': name, 'user': self.user}
         url = self._getAPIUrl('/search/repositories?q=%(name)s+user:%(user)s', param)
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.get(url, headers = self._getAuthenticationHeader())
 
@@ -83,16 +88,18 @@ class GitHubHoster(BaseHoster):
         for repo in json_response['items']:
           if repo['name'] == name:
             return self._parseProjectResponse(repo)
-      raise ValueError('Repository not found')
+      raise LookupError('Repository not found')
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def createRepository(self, name, visibility, description=None, website=None):
-    if self.api_version == 3:
+    if name in self.ignored_repositories:
+      raise PermissionError('Repository name \'' + name + '\' is in ignored-list of this hoster')
 
+    if self.api_version == 3:
       if self.organization != None:
         url = self._getAPIUrl('/orgs/%(org)s/repos', {'org': self.organization})
       else:
@@ -113,16 +120,16 @@ class GitHubHoster(BaseHoster):
         'has_wiki': False
       }
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.post(url, data = json.dumps(values), headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
       return self._parseProjectResponse(response.json())
     elif response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     else:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code) + ': ' + response.text)
+      self._raiseConnectionError(response)
 
 
   def updateRepository(self, repo):
@@ -150,14 +157,14 @@ class GitHubHoster(BaseHoster):
         'has_wiki': False
       }
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.patch(url, data = json.dumps(values), headers = self._getAuthenticationHeader())
 
     if response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     elif response.status_code not in [200, 201, 202]:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def deleteRepository(self, repo):
@@ -167,14 +174,14 @@ class GitHubHoster(BaseHoster):
       else:
         url = self._getAPIUrl('/repos/%(user)s/%(repo)s', {'user': self.user, 'repo': repo.name})
     else:
-      raise ValueError('Operation not supported with API v' + str(self.api_version))
+      raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
     response = requests.delete(url, headers = self._getAuthenticationHeader())
 
     if response.status_code in [401, 403]:
-      raise PermissionError('Access denied by the server')
+      self._raisePermissionError(response)
     elif response.status_code not in [200, 201, 202, 203, 204]:
-      raise ConnectionError('Received HTTP error ' + str(response.status_code))
+      self._raiseConnectionError(response)
 
 
   def _checkVisibility(self, visibility):

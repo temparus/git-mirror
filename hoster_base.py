@@ -9,19 +9,21 @@ from abc import ABC, abstractmethod
 class BaseHoster(ABC):
 
   @abstractmethod
-  def __init__(self, name, user, password, organization=None):
+  def __init__(self, name, user, password, organization=None, ignored_repositories=list()):
     '''
     Initialize a git hoster instance
 
-    :param str name:         hoster name
-    :param str user:         username for the git service
-    :param str password:     password for the git service (in plain text)
-    :param str organization: organization name used for syncing
+    :param str name:                 Hoster name
+    :param str user:                 Username for the git service
+    :param str password:             Password for the git service (in plain text)
+    :param str organization:         Organization name used for syncing
+    :param str ignored_repositories: List of repository names to be ignored
     '''
     self.name = name
     self.user = user
     self.password = password
     self.organization = organization
+    self.ignored_repositories = ignored_repositories
 
 
   @abstractmethod
@@ -109,3 +111,23 @@ class BaseHoster(ABC):
     :raises ValueError:          if the given repository does not exist
     '''
     pass
+
+
+  def _raisePermissionError(self, response):
+    json_response = response.json()
+    message = 'HTTP ERROR ' + str(response.status_code)
+    if 'error' in json_response:
+      message += ': ' + json_response['error']
+    else:
+      message += ': ' + response.text
+    raise PermissionError(message)
+
+
+  def _raiseConnectionError(self, response):
+    json_response = response.json()
+    message = 'HTTP ERROR ' + str(response.status_code)
+    if 'error' in json_response:
+      message += ': ' + json_response['error']
+    else:
+      message += ': ' + response.text
+    raise ConnectionError(message)
