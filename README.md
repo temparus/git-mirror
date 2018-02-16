@@ -11,7 +11,7 @@ This tool mirrors repositories from GitLab to GitHub and vice versa. No direct a
 ## Setup
 
 1. Get source files
-    * **Docker** Use the official image (https://hub.docker.com/r/temparus/git-mirror/)
+    * **Docker** Use the official image (<https://hub.docker.com/r/temparus/git-mirror/>)
     * **Standalone**
       Just clone this repository to a directory on your machine and install the dependencies:
       ```bash
