@@ -141,7 +141,7 @@ class Task():
       source_repositories = self.source.listRepositories('all')
       source_names = list()
       for source_repo in source_repositories:
-        if source_remote.description != None and not source_repo.description.startswith('MIRROR:'):
+        if source_repo.description != None and not source_repo.description.startswith('MIRROR:'):
           source_names.append(source_repo.name)
 
       # Delete non-existent repositories on mirror destinations
