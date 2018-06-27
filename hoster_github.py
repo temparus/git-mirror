@@ -130,9 +130,6 @@ class GitHubHoster(BaseHoster):
 
   def updateRepository(self, repo):
     if self.api_version == 3:
-      if repo.website != None:
-        repo.description += ' // ' + repo.website
-
       if self.organization != None:
         url = self._getAPIUrl('/repos/%(org)s/%(repo)s', {'org': self.organization, 'repo': repo.name})
       else:
