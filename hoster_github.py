@@ -10,8 +10,6 @@ import json
 import requests
 from urllib.parse import urlencode
 
-# TODO: Implementation
-
 class GitHubHoster(BaseHoster):
 
   def __init__(self, name, user, password, api_version, organization=None, ignored_repositories=list()):
@@ -33,7 +31,7 @@ class GitHubHoster(BaseHoster):
     self.api_version = api_version
 
 
-  def listRepositories(self, visibility):
+  def getRepositoryList(self, visibility):
     self._checkVisibility(visibility)
 
     param = dict()
@@ -48,22 +46,20 @@ class GitHubHoster(BaseHoster):
         param = {'type': visibility}
       else:
         param['affiliation'] = 'owner'
-        url = self._getAPIUrl('/user/repos', {'user': self.user})
+        url = self._getAPIUrl('/user/%(user)/repos', {'user': self.user})
     else:
       raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
-
+    
     response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
 
-    if response.status_code in [200, 201, 202]:
-      repoList = list()
-      for repo in response.json():
-        if (repo['name'] not in self.ignored_repositories):
-          repoList.append(self._parseProjectResponse(repo))
-      return repoList
-    elif response.status_code in [401, 403]:
-      self._raisePermissionError(response)
-    else:
-      self._raiseConnectionError(response)
+    repo_list = self._parseRepositoryListResponse(response)
+    next_link = self._parseLinkResponseHeader(response)
+
+    while (next_link):
+      response = requests.get(next_link, headers = self._getAuthenticationHeader())
+      repo_list += self._parseRepositoryListResponse(response)
+      next_link = self._parseLinkResponseHeader(response)
+    return repo_list
 
 
   def getRepository(self, name):
@@ -218,3 +214,44 @@ class GitHubHoster(BaseHoster):
       'Accept': 'application/vnd.github.v' + str(self.api_version) + '.text+json',
       'Authorization': 'token ' + self.password
     }
+
+
+  def _parseLinkResponseHeader(self, response):
+    '''
+    Parses the Link header and returns the link for the next resource if available
+
+    :param object response: request response object
+
+    :return: returns the link for the next page
+    :rtype:  str
+    '''
+    links = response.headers['Link'].split(',')
+    for link in links:
+      partials = link.split('; ', 2)
+      if (len(partials) == 2 and partials[1] == 'rel="next"'):
+        return partials[0][1:-1]
+    return None
+
+
+  def _parseRepositoryListResponse(self, response):
+    '''
+    Parse the API response and return all (non-ignored) repositories as a list.
+
+    :param object response: request response object
+
+    :return: returns a list of RemoteRepository objects
+    :rtype:  list
+
+    :raises PermissionError:     if the access is denied by the server
+    :raises ConnectionError:     if another HTTP error has occurred
+    '''
+    if response.status_code in [200, 201, 202]:
+      repo_list = list()
+      for repo in response.json():
+        if (repo['name'] not in self.ignored_repositories):
+          repo_list.append(self._parseProjectResponse(repo))
+      return repo_list
+    elif response.status_code in [401, 403]:
+      self._raisePermissionError(response)
+    else:
+      self._raiseConnectionError(response)

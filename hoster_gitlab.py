@@ -37,7 +37,7 @@ class GitLabHoster(BaseHoster):
     self.domain = domain
 
 
-  def listRepositories(self, visibility):
+  def getRepositoryList(self, visibility):
     self._checkVisibility(visibility)
 
     param = dict()
@@ -52,18 +52,15 @@ class GitLabHoster(BaseHoster):
     else:
       raise NotImplementedError('Operation not supported with API v' + str(self.api_version))
 
-    response = requests.get(url, params = param, headers = self._getAuthenticationHeader())
+    response = requests.head(url, params = param, headers = self._getAuthenticationHeader())
 
-    if response.status_code in [200, 201, 202]:
-      repoList = list()
-      for repo in response.json():
-        if (repo['name'] not in self.ignored_repositories):
-          repoList.append(self._parseProjectResponse(repo))
-      return repoList
-    elif response.status_code in [401, 403]:
-      self._raisePermissionError(response)
-    else:
-      self._raiseConnectionError(response)
+    total_pages = int(response.headers['X-Total-Pages'])
+    repo_list = list()
+
+    for page in range(1, total_pages+1):
+      repo_list += self._getRepositoryListPage(url, param, page)
+
+    return repo_list
 
 
   def getRepository(self, name):
@@ -226,3 +223,33 @@ class GitLabHoster(BaseHoster):
 
   def _getAuthenticationHeader(self):
     return {'Private-Token': self.password}
+
+
+  def _getRepositoryListPage(self, apiUrl, params, page):
+    '''
+    Get the given page of repositories of the given type
+
+    :param str apiUrl: prepared API URL to request the repositories
+    :param dict params: request GET parameters
+    :param int page: page number to load from the server
+
+    :return: returns a list of RemoteRepository objects
+    :rtype:  list
+
+    :raises PermissionError:     if the access is denied by the server
+    :raises ConnectionError:     if another HTTP error has occurred
+    '''
+    params['page'] = page
+
+    response = requests.get(apiUrl, params = params, headers = self._getAuthenticationHeader())
+
+    if response.status_code in [200, 201, 202]:
+      repo_list = list()
+      for repo in response.json():
+        if (repo['name'] not in self.ignored_repositories):
+          repo_list.append(self._parseProjectResponse(repo))
+      return repo_list
+    elif response.status_code in [401, 403]:
+      self._raisePermissionError(response)
+    else:
+      self._raiseConnectionError(response)

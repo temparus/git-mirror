@@ -27,9 +27,9 @@ class BaseHoster(ABC):
 
 
   @abstractmethod
-  def listRepositories(self, visibility):
+  def getRepositoryList(self, visibility):
     '''
-    List all repositories of the given type
+    Get all repositories of the given type
 
     :param str visibility: requested repository type (public, internal, private, all)
 
@@ -37,7 +37,7 @@ class BaseHoster(ABC):
     :rtype:  list
 
     :raises PermissionError:     if the access is denied by the server
-    :raises ConnectionError:     if another HTTP error has occured
+    :raises ConnectionError:     if another HTTP error has occurred
     :raises NotImplementedError: if this operation is not implemented/supported with the given API version
     :raises ValueError:          if the given visibility is unknown
     '''
@@ -55,7 +55,7 @@ class BaseHoster(ABC):
     :rtype:  RemoteRepository
 
     :raises PermissionError:     if the access is denied by the server
-    :raises ConnectionError:     if another HTTP error has occured
+    :raises ConnectionError:     if another HTTP error has occurred
     :raises NotImplementedError: if this operation is not implemented/supported with the given API version
     :raises ValueError:          if the repository does not exist
     '''
@@ -76,7 +76,7 @@ class BaseHoster(ABC):
     :rtype:  RemoteRepository
 
     :raises PermissionError:     if the access is denied by the server
-    :raises ConnectionError:     if another HTTP error has occured
+    :raises ConnectionError:     if another HTTP error has occurred
     :raises NotImplementedError: if this operation is not implemented/supported with the given API version
     :raises ValueError:          if the given parameters are invalid
     '''
@@ -91,7 +91,7 @@ class BaseHoster(ABC):
     :param RemoteRepository repo: remote repository containing updated values
 
     :raises PermissionError:      if the access is denied by the server
-    :raises ConnectionError:      if another HTTP error has occured
+    :raises ConnectionError:      if another HTTP error has occurred
     :raises NotImplementedError:  if this operation is not implemented/supported with the given API version
     :raises ValueError:           if the given parameters are invalid
     '''
@@ -106,7 +106,7 @@ class BaseHoster(ABC):
     :param RemoteRepository repo: remote repository to be deleted
 
     :raises PermissionError:     if the access is denied by the server
-    :raises ConnectionError:     if another HTTP error has occured
+    :raises ConnectionError:     if another HTTP error has occurred
     :raises NotImplementedError: if this operation is not implemented/supported with the given API version
     :raises ValueError:          if the given repository does not exist
     '''

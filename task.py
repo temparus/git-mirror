@@ -110,7 +110,7 @@ class Task():
               print('ERROR: ' + str(e))
     else:
       try:
-        source_remotes = self.source.listRepositories(self.sync)
+        source_remotes = self.source.getRepositoryList(self.sync)
         for source_remote in source_remotes:
           if source_remote.name not in self.ignored_repositories and \
             source_remote.description != None and not source_remote.description.startswith('MIRROR:'):
@@ -129,7 +129,7 @@ class Task():
       except Exception as e:
         if verbose:
           print('ERROR: ' + str(e))
-
+    
     for repository in repositories:
       try:
         if verbose:
@@ -142,9 +142,9 @@ class Task():
         pass # ignore this repository when an error occures
 
     if self.delete:
-      source_repositories = self.source.listRepositories('public')
-      source_repositories += self.source.listRepositories('internal')
-      source_repositories += self.source.listRepositories('private')
+      source_repositories = self.source.getRepositoryList('public')
+      source_repositories += self.source.getRepositoryList('internal')
+      source_repositories += self.source.getRepositoryList('private')
       source_names = list()
       for source_repo in source_repositories:
         if source_repo.description != None and not source_repo.description.startswith('MIRROR:'):
@@ -152,7 +152,7 @@ class Task():
 
       # Delete non-existent repositories on mirror destinations
       for key in self.destinations:
-        destination_repositories = self.destinations[key].listRepositories('all')
+        destination_repositories = self.destinations[key].getRepositoryList('all')
         for repo in destination_repositories:
           if repo.description != None and repo.description.startswith('MIRROR:') and repo.name not in source_names:
             self.destinations[key].deleteRepository(repo)
