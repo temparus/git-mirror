@@ -1,6 +1,6 @@
 # git-mirror
 
-This tool mirrors repositories from GitLab to GitHub and vice versa. No direct access to the GitLab Server is needed.
+This tool mirrors repositories between GitLab, GitHub and Bitbucket. No direct access to the GitLab Server is required.
 
 ## Requirements
 

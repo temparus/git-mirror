@@ -7,6 +7,7 @@
 from hoster_base import BaseHoster
 from hoster_gitlab import GitLabHoster
 from hoster_github import GitHubHoster
+from hoster_bitbucket import BitbucketHoster
 
 def getHosterInstance(config):
     '''
@@ -39,5 +40,7 @@ def getHosterInstance(config):
         raise ValueError('Property \'domain\' required for hoster \'gitlab\'')
       return GitLabHoster(config['name'], config['user'], config['password'], config['api-version'], \
         config['domain'], organization, ignored_repositories)
+    elif config['type'] == 'bitbucket':
+      return BitbucketHoster(config['name'], config['user'], config['password'], config['api-version'], organization, ignored_repositories)
     else:
       raise ValueError('Unknown hoster \'' + config['type'] + '\'')

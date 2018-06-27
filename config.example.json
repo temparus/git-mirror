@@ -21,6 +21,24 @@
       "password": "<password>"
     },
     {
+      "name": "bitbucket_organization",
+      "type": "bitbucket",
+      "api-version": 2,
+      "organization": "<bitbucket-team>",
+      "user": "<bitbucket-user>",
+      "password": "<app-password>",
+      "ignored-repositories": [
+        "<repo name to be ignored>"
+      ]
+    },
+    {
+      "name": "bitbucket_personal",
+      "type": "bitbucket",
+      "api-version": 2,
+      "user": "<bitbucket-user>",
+      "password": "<app-password>"
+    },
+    {
       "name": "github_organization",
       "type": "github",
       "api-version": 3,
@@ -38,7 +56,7 @@
   ],
   "tasks": [
     {
-      "name": "gitlab_gitHub",
+      "name": "gitlab_github",
       "sync": "public",
       "create": true,
       "delete": true,
@@ -51,7 +69,18 @@
       ]
     },
     {
-      "name": "gitHub_gitLab",
+      "name": "gitlab_bitbucket",
+      "sync": "internal",
+      "create": true,
+      "delete": true,
+      "source": "gitlab_personal",
+      "destinations": [
+        "gitlab_personal",
+        "bitbucket_organization"
+      ]
+    },
+    {
+      "name": "github_gitlab",
       "sync": "manual",
       "create": true,
       "delete": true,
