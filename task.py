@@ -105,6 +105,8 @@ class Task():
           except PermissionError:
             if verbose:
               print('Permission denied on hoster \'' + self.source.name + '\'')
+          except KeyboardInterrupt as e:
+            raise e
           except Exception as e:
             if verbose:
               print('ERROR: ' + str(e))
@@ -126,16 +128,20 @@ class Task():
         if verbose:
           print('Permission denied on hoster \'' + self.source.name + '\'')
           return # Skip this hoster
+      except KeyboardInterrupt as e:
+        raise e
       except Exception as e:
         if verbose:
           print('ERROR: ' + str(e))
-    
+
     for repository in repositories:
       try:
         if verbose:
           print('Mirror repository \'' + repository.source.name + '\'')
         repository.clone()
         repository.push()
+      except KeyboardInterrupt as e:
+        raise e
       except:
         if verbose:
           print('SyncError: Skip repository \'' + repository.source.name + '\'')
@@ -179,8 +185,12 @@ class Task():
             destination_remotes[destinations[key].name] = destinations[key].createRepository(
               source_remote.name, source_remote.visibility, description, source_remote.web_url
             )
+          except KeyboardInterrupt as e:
+            raise e
           except:
             pass # Skip this destination when communication errors occur
+      except KeyboardInterrupt as e:
+        raise e
       except:
         pass # Skip this destination when communication errors occur
 
