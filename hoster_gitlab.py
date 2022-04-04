@@ -54,11 +54,11 @@ class GitLabHoster(BaseHoster):
 
     response = requests.head(url, params = param, headers = self._getAuthenticationHeader())
 
-    total_pages = int(response.headers['X-Total-Pages'])
-    repo_list = list()
+    repo_list = self._parseApiRepositoryListResponse(response)
 
-    for page in range(1, total_pages+1):
-      repo_list += self._getRepositoryListPage(url, param, page)
+    while next_url is not None:
+      new_items, next_url = self._getRepositoryListKeyBasedPagination(next_url, param)
+      repo_list += new_items
 
     return repo_list
 
@@ -225,31 +225,37 @@ class GitLabHoster(BaseHoster):
     return {'Private-Token': self.password}
 
 
-  def _getRepositoryListPage(self, apiUrl, params, page):
+  def _getRepositoryListKeyBasedPagination(self, apiUrl, params):
     '''
     Get the given page of repositories of the given type
 
     :param str apiUrl: prepared API URL to request the repositories
     :param dict params: request GET parameters
-    :param int page: page number to load from the server
 
-    :return: returns a list of RemoteRepository objects
-    :rtype:  list
+    :return: returns a list of RemoteRepository objects and the url for the next items
+    :rtype:  Tuple[List, str]
 
     :raises PermissionError:     if the access is denied by the server
     :raises ConnectionError:     if another HTTP error has occurred
     '''
-    params['page'] = page
 
     response = requests.get(apiUrl, params = params, headers = self._getAuthenticationHeader())
 
     if response.status_code in [200, 201, 202]:
-      repo_list = list()
-      for repo in response.json():
-        if (repo['name'] not in self.ignored_repositories):
-          repo_list.append(self._parseProjectResponse(repo))
-      return repo_list
+      if 'link' in response.headers:
+        next_link = response.headers['link']
+      else:
+        next_link = None
+      repo_list = self._parseApiRepositoryListResponse(response)
+      return repo_list, next_link
     elif response.status_code in [401, 403]:
       self._raisePermissionError(response)
     else:
       self._raiseConnectionError(response)
+
+  def _parseApiRepositoryListResponse(self, response):
+    repo_list = list()
+    for repo in response.json():
+      if (repo['name'] not in self.ignored_repositories):
+        repo_list.append(self._parseProjectResponse(repo))
+    return repo_list
